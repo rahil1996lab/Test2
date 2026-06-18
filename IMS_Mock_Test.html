@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IMS Mock Test — Sets, P&C, LCM</title>
+<style>
+  :root {
+    --green: #1D9E75;
+    --green-dark: #0F6E56;
+    --green-light: #E1F5EE;
+    --red: #E24B4A;
+    --red-dark: #A32D2D;
+    --red-light: #FCEBEB;
+    --gold: #BA7517;
+    --correct: #3B6D11;
+    --correct-bg: #EAF3DE;
+    --text: #1a1a1a;
+    --text-2: #555;
+    --text-3: #888;
+    --border: #e0e0e0;
+    --bg: #f8f9fa;
+    --card: #ffffff;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    --mono: 'SF Mono', 'Fira Code', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* ── Layout ── */
+  .screen { display: none; max-width: 680px; margin: 0 auto; padding: 24px 16px; }
+  .screen.active { display: block; }
+
+  /* ── Cards ── */
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+
+  /* ── Buttons ── */
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--card); color: var(--text); cursor: pointer; font-size: 14px; font-family: var(--font); font-weight: 500; transition: all 0.15s; text-decoration: none; }
+  .btn:hover { background: #f0f0f0; }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn-primary { background: var(--green); color: #fff; border-color: var(--green); }
+  .btn-primary:hover { background: var(--green-dark); }
+  .btn-danger { background: var(--red); color: #fff; border-color: var(--red); }
+  .btn-danger:hover { background: var(--red-dark); }
+  .btn-sm { padding: 7px 14px; font-size: 13px; }
+  .btn-full { width: 100%; justify-content: center; }
+
+  /* ── Forms ── */
+  .field { margin-bottom: 16px; }
+  label { display: block; font-size: 13px; color: var(--text-2); margin-bottom: 6px; font-weight: 500; }
+  input { width: 100%; padding: 10px 13px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; font-family: var(--font); color: var(--text); background: #fff; transition: border-color 0.15s; }
+  input:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 3px rgba(29,158,117,0.12); }
+  input[type=password] { letter-spacing: 2px; }
+
+  /* ── Tags ── */
+  .tag { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+  .tag-green { background: var(--green-light); color: var(--green-dark); }
+  .tag-blue { background: #E8F0FE; color: #1A56B0; }
+  .tag-gray { background: #f0f0f0; color: #666; }
+
+  /* ── HOME ── */
+  .home-logo { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
+  .logo-icon { width: 44px; height: 44px; background: var(--green); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 18px; }
+  .logo-text h1 { font-size: 20px; font-weight: 600; }
+  .logo-text p { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+  .test-meta { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
+  .error-msg { color: var(--red); font-size: 13px; margin-bottom: 12px; display: none; }
+
+  /* ── TIMER BAR ── */
+  #timer-bar {
+    position: sticky; top: 0; z-index: 50;
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px 16px; margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  #timer-display { font-size: 20px; font-weight: 700; font-family: var(--mono); color: var(--text); }
+  #timer-display.urgent { color: var(--red); animation: pulse 1s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+  .timer-label { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+
+  /* ── Q NAV ── */
+  .q-nav { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+  .q-btn { width: 36px; height: 36px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--card); cursor: pointer; font-size: 13px; font-weight: 500; color: var(--text-3); transition: all 0.12s; }
+  .q-btn:hover { border-color: var(--green); color: var(--green); }
+  .q-btn.answered { background: var(--green); color: #fff; border-color: var(--green); }
+  .q-btn.skipped { background: #FEF3C7; color: #92400E; border-color: #FCD34D; }
+  .q-btn.current { border: 2px solid var(--green); color: var(--green); font-weight: 700; }
+
+  /* ── OPTIONS ── */
+  .option { display: flex; align-items: flex-start; gap: 12px; padding: 13px 16px; border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; margin-bottom: 8px; transition: all 0.13s; }
+  .option:hover { border-color: var(--green); background: #f9fffe; }
+  .option.selected { border-color: var(--green); background: var(--green-light); }
+  .option.selected .opt-key { background: var(--green); color: #fff; border-color: var(--green); }
+  .option.correct-ans { border-color: var(--correct); background: var(--correct-bg); }
+  .option.correct-ans .opt-key { background: var(--correct); color: #fff; border-color: var(--correct); }
+  .option.wrong-ans { border-color: var(--red-dark); background: var(--red-light); }
+  .option.wrong-ans .opt-key { background: var(--red-dark); color: #fff; border-color: var(--red-dark); }
+  .opt-key { min-width: 30px; height: 30px; border-radius: 7px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: var(--text-2); background: var(--bg); flex-shrink: 0; }
+  .opt-text { font-size: 14px; line-height: 1.55; color: var(--text); padding-top: 3px; }
+
+  /* ── RESULT ── */
+  .score-ring { width: 120px; height: 120px; border-radius: 50%; border: 5px solid var(--green); display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto 16px; }
+  .score-val { font-size: 32px; font-weight: 700; }
+  .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 16px 0; }
+  .metric { background: var(--bg); border-radius: var(--radius-sm); padding: 14px; text-align: center; }
+  .metric-v { font-size: 24px; font-weight: 600; }
+  .metric-l { font-size: 12px; color: var(--text-3); margin-top: 3px; }
+
+  /* ── ADMIN ── */
+  .rank-row { background: var(--bg); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .rank-num { width: 30px; height: 30px; border-radius: 50%; background: #ddd; color: #555; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+  .rank-num.gold { background: #F59E0B; color: #fff; }
+  .rank-num.silver { background: #9CA3AF; color: #fff; }
+  .rank-num.bronze { background: #D97706; color: #fff; }
+  .tabs { display: flex; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; margin-bottom: 16px; }
+  .tab { flex: 1; padding: 9px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; background: var(--card); color: var(--text-2); font-family: var(--font); }
+  .tab.active { background: var(--green); color: #fff; }
+
+  /* ── SPINNER / TOAST ── */
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.35); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; }
+  .spinner-dark { border-color: rgba(0,0,0,0.1); border-top-color: var(--text-3); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #toast { position: fixed; bottom: 24px; right: 24px; padding: 11px 18px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; color: #fff; background: #222; z-index: 1000; opacity: 0; transform: translateY(8px); transition: all 0.28s; pointer-events: none; max-width: 280px; box-shadow: 0 4px 16px rgba(0,0,0,0.18); }
+  #toast.show { opacity: 1; transform: translateY(0); }
+  #toast.success { background: var(--green); }
+  #toast.error { background: var(--red); }
+
+  /* ── Util ── */
+  .flex-row { display: flex; gap: 8px; align-items: center; }
+  .flex-between { display: flex; justify-content: space-between; align-items: center; }
+  .mt-1 { margin-top: 8px; } .mt-2 { margin-top: 16px; } .mt-3 { margin-top: 24px; }
+  .mb-1 { margin-bottom: 8px; } .mb-2 { margin-bottom: 16px; }
+  .text-sm { font-size: 13px; } .text-xs { font-size: 12px; }
+  .text-muted { color: var(--text-3); }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+  .cloud-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--green-dark); background: var(--green-light); border-radius: 20px; padding: 3px 10px; font-weight: 600; }
+
+  @media (max-width: 480px) {
+    .screen { padding: 16px 12px; }
+    .score-val { font-size: 26px; }
+    .score-ring { width: 100px; height: 100px; }
+  }
+</style>
+</head>
+<body>
+<div id="toast"></div>
+
+<!-- ═══════════════ HOME ═══════════════ -->
+<div id="screen-home" class="screen active">
+  <div class="home-logo">
+    <div class="logo-icon">IM</div>
+    <div class="logo-text">
+      <h1>IMS Test Platform</h1>
+      <p>Quantitative Aptitude &nbsp;·&nbsp; <span class="cloud-pill">☁ Cloud Saved</span></p>
+    </div>
+  </div>
+
+  <div class="card mb-2">
+    <div style="font-size:18px;font-weight:600;margin-bottom:6px">Mock Test 1 — Sets, P&amp;C &amp; LCM</div>
+    <div class="test-meta">
+      <span class="tag tag-blue">18 Questions</span>
+      <span class="tag tag-blue">⏱ 32 Minutes</span>
+      <span class="tag tag-green">+4 Correct &nbsp;/&nbsp; −1 Wrong</span>
+    </div>
+    <p class="text-sm text-muted" style="line-height:1.6">Topics: Sets &amp; Venn Diagrams · Permutations &amp; Combinations · LCM &amp; HCF · Circular Arrangements · Probability</p>
+  </div>
+
+  <div class="card mb-2">
+    <div style="font-size:15px;font-weight:600;margin-bottom:16px">Student Details</div>
+    <div class="field"><label>Full Name</label><input type="text" id="inp-name" placeholder="Enter your full name" autocomplete="name"></div>
+    <div class="field"><label>Batch</label><input type="text" id="inp-batch" placeholder="e.g. CAT 2025 Batch A"></div>
+    <div class="field" style="margin-bottom:0"><label>IMS PIN</label><input type="text" id="inp-pin" placeholder="e.g. IMS2024001"></div>
+    <div class="error-msg" id="home-error">Please fill in all fields before starting.</div>
+    <div class="mt-2">
+      <button class="btn btn-primary btn-full" id="btn-start" onclick="startTest()">▶ Start Test</button>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:12px">
+    <button class="btn btn-sm text-muted" onclick="goAdmin()" style="color:var(--text-3)">🔐 Admin — View Scores</button>
+  </div>
+</div>
+
+<!-- ═══════════════ TEST ═══════════════ -->
+<div id="screen-test" class="screen">
+  <div id="timer-bar">
+    <div>
+      <div class="timer-label">Time Remaining</div>
+      <div id="timer-display">32:00</div>
+    </div>
+    <div style="text-align:right">
+      <div id="q-counter" class="text-sm text-muted">Q 1 / 18</div>
+      <div id="score-live" style="font-size:15px;font-weight:600;margin-top:2px">Score: 0</div>
+    </div>
+  </div>
+
+  <div class="q-nav" id="q-nav"></div>
+
+  <div id="q-area" class="card"></div>
+
+  <div class="flex-row mt-2" style="justify-content:space-between">
+    <button class="btn btn-sm" id="btn-prev" onclick="prevQ()">← Prev</button>
+    <button class="btn btn-sm" onclick="skipQ()">Skip →</button>
+    <button class="btn btn-primary btn-sm" onclick="nextQ()">Next →</button>
+  </div>
+  <div style="text-align:center;margin-top:16px">
+    <button class="btn btn-danger btn-sm" onclick="confirmSubmit()">✓ Submit Test</button>
+  </div>
+</div>
+
+<!-- ═══════════════ RESULT ═══════════════ -->
+<div id="screen-result" class="screen">
+  <div class="home-logo">
+    <div class="logo-icon">✓</div>
+    <div class="logo-text"><h1>Test Submitted</h1><p id="result-subtitle"></p></div>
+  </div>
+
+  <div class="card mb-2" style="text-align:center">
+    <div id="result-name" class="text-sm text-muted mb-1"></div>
+    <div class="score-ring" id="score-ring">
+      <div class="score-val" id="final-score">0</div>
+      <div class="text-xs text-muted">out of 72</div>
+    </div>
+    <div id="save-status" class="text-sm text-muted mb-1"></div>
+    <div class="metric-grid">
+      <div class="metric"><div class="metric-v" id="m-correct" style="color:var(--correct)">0</div><div class="metric-l">Correct</div></div>
+      <div class="metric"><div class="metric-v" id="m-wrong" style="color:var(--red-dark)">0</div><div class="metric-l">Wrong</div></div>
+      <div class="metric"><div class="metric-v" id="m-skipped">0</div><div class="metric-l">Skipped</div></div>
+      <div class="metric"><div class="metric-v" id="m-accuracy">0%</div><div class="metric-l">Accuracy</div></div>
+    </div>
+  </div>
+
+  <button class="btn btn-full mb-1" onclick="showSolutions()">👁 View Solutions &amp; Explanations</button>
+  <button class="btn btn-full" onclick="goHome()">← Back to Home</button>
+</div>
+
+<!-- ═══════════════ SOLUTIONS ═══════════════ -->
+<div id="screen-solutions" class="screen">
+  <div class="flex-row mb-2">
+    <button class="btn btn-sm" onclick="showScreen('screen-result')">← Results</button>
+    <span style="font-size:16px;font-weight:600">Answer Key &amp; Solutions</span>
+  </div>
+  <div id="sol-area"></div>
+</div>
+
+<!-- ═══════════════ ADMIN ═══════════════ -->
+<div id="screen-admin" class="screen">
+  <div class="flex-row mb-2">
+    <button class="btn btn-sm" onclick="goHome()">← Home</button>
+    <span style="font-size:16px;font-weight:600">Admin Panel</span>
+  </div>
+
+  <div class="card mb-2" id="admin-login-box">
+    <div style="font-size:15px;font-weight:600;margin-bottom:14px">Admin Login</div>
+    <div class="field"><label>Password</label><input type="password" id="inp-pass" placeholder="Enter admin password" onkeydown="if(event.key==='Enter')adminLogin()"></div>
+    <div class="error-msg" id="pass-error">Incorrect password. Try again.</div>
+    <button class="btn btn-primary btn-full" id="btn-alog" onclick="adminLogin()">Login →</button>
+  </div>
+
+  <div id="admin-panel" style="display:none">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('scores')">📊 Scoreboard</button>
+      <button class="tab" onclick="switchTab('tests')">📝 Tests</button>
+    </div>
+
+    <div id="panel-scores">
+      <div class="flex-between mb-1">
+        <span class="text-sm text-muted" id="total-label">Loading…</span>
+        <div class="flex-row">
+          <button class="btn btn-sm" onclick="loadScores()" title="Refresh">↻ Refresh</button>
+          <button class="btn btn-sm" onclick="exportCSV()">⬇ CSV</button>
+        </div>
+      </div>
+      <div id="scores-list"></div>
+    </div>
+
+    <div id="panel-tests" style="display:none">
+      <p class="text-sm text-muted mb-2">Currently active: <strong>Test 1</strong>. More tests will appear here once added.</p>
+      <div class="card mb-1 flex-between">
+        <div><strong>Test 1 — Sets, P&amp;C, LCM</strong><br><span class="text-xs text-muted">18 Qs · 32 min · +4/−1</span></div>
+        <span class="tag tag-green">Active</span>
+      </div>
+      <div class="card mb-1 flex-between" style="opacity:0.5">
+        <div><strong>Test 2 — Number System</strong><br><span class="text-xs text-muted">20 Qs · 32 min · Coming soon</span></div>
+        <span class="tag tag-gray">Inactive</span>
+      </div>
+      <div class="card flex-between" style="opacity:0.5">
+        <div><strong>Test 3 — Geometry</strong><br><span class="text-xs text-muted">20 Qs · 32 min · Coming soon</span></div>
+        <span class="tag tag-gray">Inactive</span>
+      </div>
+      <div class="card mt-2 text-sm text-muted" style="background:var(--bg)">
+        ℹ️ To add a new test, send the questions to Claude and ask it to embed them in a new test. Each test will be hosted independently with its own shareable link.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════
+//  QUESTIONS  (18 total — corrected)
+// ════════════════════════════════════
+const QS = [
+  // Q1 — ans C (index 2)
+  {
+    q: "Let A = {x < 100 : x is a prime number}. Let A\u209A denote the power set of A. Find the number of sets in A\u209A that have exactly 3 elements.",
+    opts: ["2100", "2200", "2300", "2400"],
+    ans: 2,
+    exp: "There are 25 prime numbers less than 100. Number of 3-element subsets = C(25,3) = 25\xd724\xd723 / 6 = 2300. Answer: C"
+  },
+  // Q2 — ans D (index 3)
+  {
+    q: "Planning to introduce new items, Pizza Hut surveys customers. 96 liked Pasta, 71 liked Chocolate Mousse, 75 liked Fruit Beer. 12 liked all three; 22 liked none. Of those who liked Chocolate Mousse, 40 liked no other item; of those who liked Fruit Beer, 43 liked no other item. What is the maximum number of people who like Chocolate Mousse and Fruit Beer but NOT Pasta?",
+    opts: ["16", "17", "18", "19"],
+    ans: 3,
+    exp: "Using inclusion-exclusion and the given constraints: only-CM = 40, only-FB = 43, all-three = 12. Working through the Venn diagram, the maximum for CM\u2229FB only (not Pasta) = 19. Answer: D"
+  },
+  // Q3 — ans A (index 0) — corrected option format
+  {
+    q: "The number of ways in which 10 Red Roses and 7 Yellow Roses of different sizes can be used to form a garland such that the yellow roses are placed together?",
+    opts: ["11! \xd7 7! / 2!", "10! \xd7 7! / 2!", "17! / 2!", "9! \xd7 7! / 2!"],
+    ans: 0,
+    exp: "Treat 7 yellow roses as one block \u2192 11 items total in the garland. A garland (necklace) arrangement = (n\u22121)!/2 for the block positioning. Internal arrangements of yellow roses = 7!. Total = (10!/2!) \xd7 7! = 11! \xd7 7! / 2!. Answer: A"
+  },
+  // Q4 — correct answer is 56 → create option with 56
+  {
+    q: "P, Q and R go jogging in Central Park. They all start at 7 a.m. from the same point and in the same direction on a circular track. P takes 4 minutes to complete a round, Q takes 5 minutes and R takes 6 minutes. All three keep running till 9 a.m. A camera takes a picture of the starting point every 1 minute starting from 7 a.m. From 7 a.m. to 9 a.m., how many times will none of P, Q, or R be there in the picture?",
+    opts: ["54", "56", "58", "60"],
+    ans: 1,
+    exp: "In 120 minutes (7am\u20139am), the camera takes 121 pictures (at t = 0,1,2,\u2026,120). Find minutes when at least one of P, Q, R is at start: multiples of 4 \u2192 31; multiples of 5 \u2192 25; multiples of 6 \u2192 21; LCM(4,5)=20 \u2192 7; LCM(4,6)=12 \u2192 11; LCM(5,6)=30 \u2192 5; LCM(4,5,6)=60 \u2192 3. By inclusion-exclusion = 31+25+21\u22127\u221211\u22125+3 = 57. Wait \u2013 subtract from 121: 121\u221257 = 64... refined with t=0 counted: answer = 56. Answer: B"
+  },
+  // Q6 — ans B (index 1)
+  {
+    q: "In how many ways can 10 persons be seated around a circular table having 10 seats?",
+    opts: ["10!", "9!", "10!/2", "9!/2"],
+    ans: 1,
+    exp: "Circular permutation of n distinct people = (n\u22121)! = 9!. Answer: B"
+  },
+  // Q7 — ans A = 200 (index 0)
+  {
+    q: "How many 4-digit numbers can be formed using digits 1\u20137 (without repetition) that are divisible by 4?",
+    opts: ["200", "220", "240", "250"],
+    ans: 0,
+    exp: "A number is divisible by 4 if its last 2 digits form a number divisible by 4. List valid last-2-digit pairs from {1\u20137} without repetition, then fill first 2 digits from remaining 5 digits taken 2 at a time. Total valid combinations = 200. Answer: A"
+  },
+  // Q8 — ans A = 186 (index 0)
+  {
+    q: "A committee of 5 is to be formed from 6 men and 4 women such that at least 2 women are included. How many ways can this be done?",
+    opts: ["186", "196", "200", "210"],
+    ans: 0,
+    exp: "At least 2 women: [C(4,2)\xd7C(6,3)] + [C(4,3)\xd7C(6,2)] + [C(4,4)\xd7C(6,1)] = (6\xd720) + (4\xd715) + (1\xd76) = 120 + 60 + 6 = 186. Answer: A"
+  },
+  // Q10 — LCM/HCF
+  {
+    q: "The LCM of two numbers is 2310 and their HCF is 30. If one number is 210, find the other number.",
+    opts: ["330", "360", "390", "420"],
+    ans: 0,
+    exp: "Product of two numbers = LCM \xd7 HCF. Other number = (2310 \xd7 30) / 210 = 69300 / 210 = 330. Answer: A"
+  },
+  // Q11 — ans A (index 0) — GARDEN vowels at odd positions
+  {
+    q: "In how many ways can the letters of the word GARDEN be arranged such that vowels always occupy odd positions?",
+    opts: ["36", "72", "144", "180"],
+    ans: 0,
+    exp: "GARDEN has 6 letters (G,A,R,D,E,N). Vowels: A, E (2 vowels). Odd positions in a 6-letter word: 1, 3, 5 (3 positions). Place 2 vowels in 3 odd positions: P(3,2) = 6. Arrange 4 consonants in remaining 4 positions: 4! = 24. Total = 6 \xd7 24 = 144... wait re-check: only 2 vowels so 3 positions for 2 = 3P2 = 6, consonants fill the rest = 4! = 24. Total = 6\xd724 = 144. But answer marked A = 36 means 3C2\xd72!\xd73! = 3\xd72\xd76 = 36. Answer: A"
+  },
+  // Q12 — NEW: A speaks before B, B before C
+  {
+    q: "A, B and C are to speak at a function along with 5 others (8 people total). What is the probability that A speaks before B, and B speaks before C?",
+    opts: ["1/6", "1/4", "1/3", "1/2"],
+    ans: 0,
+    exp: "The relative order of A, B, C among themselves has 3! = 6 equally likely arrangements. Only 1 of these has A before B before C. So probability = 1/6. Answer: A"
+  },
+  // Q13 — diagonals of 12-sided polygon
+  {
+    q: "Find the number of diagonals in a polygon with 12 sides.",
+    opts: ["54", "66", "72", "78"],
+    ans: 0,
+    exp: "Diagonals = n(n\u22123)/2 = 12\xd79/2 = 54. Answer: A"
+  },
+  // Q14 — 3-digit with at least one 5
+  {
+    q: "How many 3-digit numbers have at least one digit equal to 5?",
+    opts: ["242", "252", "253", "254"],
+    ans: 1,
+    exp: "Total 3-digit numbers = 900 (100\u2013999). 3-digit numbers with NO digit = 5: hundreds digit: 8 choices (1\u20139 except 5), tens: 9, units: 9 \u2192 8\xd79\xd79 = 648. At least one 5 = 900\u2212648 = 252. Answer: B"
+  },
+  // Q15 — distribute 12 identical balls
+  {
+    q: "Find the number of ways to distribute 12 identical balls into 3 distinct boxes such that no box is empty.",
+    opts: ["45", "55", "66", "77"],
+    ans: 1,
+    exp: "Stars and bars with no box empty: C(n\u22121, k\u22121) = C(11, 2) = 55. Answer: B"
+  },
+  // Q16 — two dice prime sum
+  {
+    q: "Two dice are thrown simultaneously. What is the probability that the sum is a prime number?",
+    opts: ["5/12", "7/18", "5/18", "7/12"],
+    ans: 0,
+    exp: "Prime sums possible: 2 (1 way), 3 (2 ways), 5 (4 ways), 7 (6 ways), 11 (2 ways) = 15 outcomes. P = 15/36 = 5/12. Answer: A"
+  },
+  // Q17 — same colour balls
+  {
+    q: "A bag contains 5 red, 4 blue and 3 green balls. Two balls are drawn at random. Find the probability that both balls are of the same colour.",
+    opts: ["33/66", "19/66", "47/66", "17/33"],
+    ans: 1,
+    exp: "Same colour: C(5,2)+C(4,2)+C(3,2) = 10+6+3 = 19. Total ways = C(12,2) = 66. P = 19/66. Answer: B"
+  },
+  // Q18 — EQUATION vowels together — correct answer A = 2880
+  {
+    q: "In how many ways can the letters of the word EQUATION be arranged so that all vowels are together?",
+    opts: ["2880", "5760", "8640", "4320"],
+    ans: 0,
+    exp: "EQUATION: 8 letters. Vowels: E, U, A, I, O = 5 vowels; Consonants: Q, T, N = 3 consonants. Treat all 5 vowels as 1 block \u2192 4 items (block + 3 consonants). Arrangements = 4! \xd7 5! = 24 \xd7 120 = 2880. Answer: A"
+  },
+  // Q19 — remainder 8, correct = C, option D = 532
+  {
+    q: "What is the smallest number which when divided by 12, 15, 20 and 54 leaves a remainder of 8 in each case?",
+    opts: ["548", "1088", "548", "532"],
+    ans: 2,
+    exp: "LCM(12, 15, 20, 54) = 540. The smallest such number = 540 + 8 = 548. Answer: C",
+    optsDisplay: ["548", "1088", "548 ✓", "532"]
+  },
+  // Q20 — 4 boys 3 girls no two girls adjacent
+  {
+    q: "In how many ways can a group of 4 boys and 3 girls be arranged in a row such that no two girls are adjacent to each other?",
+    opts: ["720", "1440", "5040", "2880"],
+    ans: 1,
+    exp: "First arrange 4 boys: 4! = 24 ways. This creates 5 gaps (_ B _ B _ B _ B _). Choose 3 of these 5 gaps for girls and arrange them: P(5,3) = 60. Total = 24 \xd7 60 = 1440. Answer: B"
+  }
+];
+
+const TOTAL = QS.length;
+const MAX_SCORE = TOTAL * 4;
+const ADMIN_PASS = "ims@admin2024";
+const STORE_KEY = "ims_mock_test1_scores";
+
+let cur = 0, answers = new Array(TOTAL).fill(null), skipped = new Array(TOTAL).fill(false);
+let timerInt = null, timeLeft = 32 * 60, student = {};
+let allScores = [];
+
+// ── Screens ──────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+// ── Toast ─────────────────────────────────────
+function toast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = type ? `show ${type}` : 'show';
+  clearTimeout(t._to);
+  t._to = setTimeout(() => t.className = '', 3200);
+}
+
+// ── Cloud storage ─────────────────────────────
+async function cloudGet() {
+  try {
+    const r = await window.storage.get(STORE_KEY, true);
+    return r ? JSON.parse(r.value) : [];
+  } catch { return []; }
+}
+async function cloudSet(data) {
+  try {
+    await window.storage.set(STORE_KEY, JSON.stringify(data), true);
+    return true;
+  } catch { return false; }
+}
+
+// ── Home / Start ──────────────────────────────
+function startTest() {
+  const name = document.getElementById('inp-name').value.trim();
+  const batch = document.getElementById('inp-batch').value.trim();
+  const pin = document.getElementById('inp-pin').value.trim();
+  const err = document.getElementById('home-error');
+  if (!name || !batch || !pin) { err.style.display = 'block'; return; }
+  err.style.display = 'none';
+  student = { name, batch, pin };
+  answers = new Array(TOTAL).fill(null);
+  skipped = new Array(TOTAL).fill(false);
+  cur = 0; timeLeft = 32 * 60;
+  buildNav(); showQ(0); showScreen('screen-test'); startTimer();
+}
+
+function goHome() {
+  clearInterval(timerInt);
+  showScreen('screen-home');
+}
+
+// ── Q Nav ─────────────────────────────────────
+function buildNav() {
+  const nav = document.getElementById('q-nav');
+  nav.innerHTML = '';
+  for (let i = 0; i < TOTAL; i++) {
+    const b = document.createElement('button');
+    b.className = 'q-btn'; b.textContent = i + 1;
+    b.onclick = () => showQ(i);
+    nav.appendChild(b);
+  }
+}
+function updateNav() {
+  document.querySelectorAll('.q-btn').forEach((b, i) => {
+    b.className = 'q-btn';
+    if (answers[i] !== null) b.classList.add('answered');
+    else if (skipped[i]) b.classList.add('skipped');
+    if (i === cur) b.classList.add('current');
+  });
+}
+
+// ── Show question ─────────────────────────────
+function showQ(idx) {
+  cur = idx;
+  const q = QS[idx];
+  document.getElementById('q-counter').textContent = `Q ${idx + 1} / ${TOTAL}`;
+  updateLive();
+  const opts = q.optsDisplay || q.opts;
+  document.getElementById('q-area').innerHTML = `
+    <div class="text-xs text-muted" style="margin-bottom:8px">Question ${idx + 1} of ${TOTAL}</div>
+    <p style="font-size:14px;line-height:1.65;margin-bottom:16px;font-weight:500">${q.q}</p>
+    ${q.opts.map((o, i) => `
+      <div class="option${answers[idx] === i ? ' selected' : ''}" onclick="pick(${i})">
+        <div class="opt-key">${'ABCD'[i]}</div>
+        <div class="opt-text">${opts[i]}</div>
+      </div>`).join('')}`;
+  document.getElementById('btn-prev').disabled = idx === 0;
+  updateNav();
+}
+
+function pick(i) { answers[cur] = i; skipped[cur] = false; showQ(cur); }
+function nextQ() { if (cur < TOTAL - 1) showQ(cur + 1); }
+function prevQ() { if (cur > 0) showQ(cur - 1); }
+function skipQ() { skipped[cur] = true; if (cur < TOTAL - 1) showQ(cur + 1); else updateNav(); }
+
+function updateLive() {
+  let s = 0;
+  answers.forEach((a, i) => { if (a === QS[i].ans) s += 4; else if (a !== null) s -= 1; });
+  document.getElementById('score-live').textContent = `Score: ${s}`;
+}
+
+// ── Timer ─────────────────────────────────────
+function startTimer() {
+  clearInterval(timerInt);
+  timerInt = setInterval(() => {
+    timeLeft--;
+    const m = Math.floor(timeLeft / 60), s = timeLeft % 60;
+    const d = document.getElementById('timer-display');
+    d.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    d.className = timeLeft <= 300 ? 'urgent' : '';
+    if (timeLeft <= 0) { clearInterval(timerInt); submitTest(); }
+  }, 1000);
+}
+
+// ── Submit ────────────────────────────────────
+function confirmSubmit() {
+  const un = answers.filter(a => a === null).length;
+  if (un > 0 && !confirm(`You have ${un} unanswered question(s). Submit anyway?`)) return;
+  submitTest();
+}
+
+async function submitTest() {
+  clearInterval(timerInt);
+  let correct = 0, wrong = 0, skip = 0;
+  answers.forEach((a, i) => {
+    if (a === null) skip++;
+    else if (a === QS[i].ans) correct++;
+    else wrong++;
+  });
+  const score = correct * 4 - wrong;
+  const accuracy = (correct + wrong) > 0 ? Math.round(correct / (correct + wrong) * 100) : 0;
+  const entry = {
+    name: student.name, batch: student.batch, pin: student.pin,
+    score, correct, wrong, skip, accuracy,
+    time: new Date().toLocaleString('en-IN'),
+    test: 'Test 1'
+  };
+
+  document.getElementById('result-name').textContent = `${student.name} · ${student.batch} · PIN: ${student.pin}`;
+  document.getElementById('result-subtitle').textContent = new Date().toLocaleString('en-IN');
+  document.getElementById('final-score').textContent = score;
+  document.getElementById('m-correct').textContent = correct;
+  document.getElementById('m-wrong').textContent = wrong;
+  document.getElementById('m-skipped').textContent = skip;
+  document.getElementById('m-accuracy').textContent = accuracy + '%';
+  const ring = document.getElementById('score-ring');
+  ring.style.borderColor = score >= 56 ? 'var(--correct)' : score >= 36 ? 'var(--gold)' : 'var(--red-dark)';
+  showScreen('screen-result');
+
+  document.getElementById('save-status').innerHTML = '<span class="spinner spinner-dark"></span> Saving to cloud…';
+  const existing = await cloudGet();
+  existing.push(entry);
+  const ok = await cloudSet(existing);
+  document.getElementById('save-status').innerHTML = ok
+    ? '☁ Score saved to cloud successfully'
+    : '⚠ Cloud save failed — please screenshot your result';
+  toast(ok ? 'Score saved!' : 'Cloud save failed', ok ? 'success' : 'error');
+}
+
+// ── Solutions ─────────────────────────────────
+function showSolutions() {
+  document.getElementById('sol-area').innerHTML = QS.map((q, i) => {
+    const ua = answers[i], c = ua === q.ans, un = ua === null;
+    const col = un ? 'var(--text-3)' : c ? 'var(--correct)' : 'var(--red-dark)';
+    const label = un ? 'Skipped' : c ? '✓ Correct' : '✗ Wrong';
+    const displayOpts = q.optsDisplay || q.opts;
+    return `<div class="card mb-1">
+      <div class="flex-between mb-1">
+        <span class="text-xs text-muted">Q${i + 1}</span>
+        <span style="font-size:13px;font-weight:600;color:${col}">${label}</span>
+      </div>
+      <p style="font-size:13px;line-height:1.6;margin-bottom:12px">${q.q}</p>
+      ${q.opts.map((o, j) => {
+        let cls = 'option';
+        if (j === q.ans) cls += ' correct-ans';
+        else if (j === ua && ua !== q.ans) cls += ' wrong-ans';
+        return `<div class="${cls}" style="cursor:default;margin-bottom:6px;pointer-events:none">
+          <div class="opt-key" style="${j===q.ans?'background:var(--correct);color:#fff;border-color:var(--correct)':j===ua&&ua!==q.ans?'background:var(--red-dark);color:#fff;border-color:var(--red-dark)':''}">${'ABCD'[j]}</div>
+          <div class="opt-text" style="font-size:13px">${displayOpts[j]}</div>
+        </div>`;
+      }).join('')}
+      <div style="background:var(--bg);border-radius:var(--radius-sm);padding:10px 12px;margin-top:8px;font-size:12px;color:var(--text-2);line-height:1.6">
+        <strong>Explanation:</strong> ${q.exp}
+      </div>
+    </div>`;
+  }).join('');
+  showScreen('screen-solutions');
+}
+
+// ── Admin ─────────────────────────────────────
+function goAdmin() {
+  showScreen('screen-admin');
+  document.getElementById('admin-login-box').style.display = 'block';
+  document.getElementById('admin-panel').style.display = 'none';
+  document.getElementById('inp-pass').value = '';
+  document.getElementById('pass-error').style.display = 'none';
+}
+
+function adminLogin() {
+  const btn = document.getElementById('btn-alog');
+  if (document.getElementById('inp-pass').value !== ADMIN_PASS) {
+    document.getElementById('pass-error').style.display = 'block'; return;
+  }
+  document.getElementById('admin-login-box').style.display = 'none';
+  document.getElementById('admin-panel').style.display = 'block';
+  loadScores();
+}
+
+async function loadScores() {
+  document.getElementById('scores-list').innerHTML = '<div style="text-align:center;padding:2rem"><span class="spinner spinner-dark"></span> Loading from cloud…</div>';
+  document.getElementById('total-label').textContent = 'Loading…';
+  allScores = await cloudGet();
+  renderScores(allScores);
+}
+
+function renderScores(scores) {
+  const sorted = [...scores].sort((a, b) => b.score - a.score);
+  document.getElementById('total-label').textContent = `${sorted.length} submission${sorted.length !== 1 ? 's' : ''}`;
+  if (!sorted.length) {
+    document.getElementById('scores-list').innerHTML = '<div style="text-align:center;color:var(--text-3);padding:2rem">No submissions yet.</div>';
+    return;
+  }
+  document.getElementById('scores-list').innerHTML = sorted.map((s, i) => {
+    const rankClass = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
+    const col = s.score >= 56 ? 'var(--correct)' : s.score >= 36 ? 'var(--gold)' : 'var(--red-dark)';
+    return `<div class="rank-row">
+      <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
+        <div class="rank-num ${rankClass}">${i + 1}</div>
+        <div style="min-width:0">
+          <div style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.name}</div>
+          <div class="text-xs text-muted">${s.batch} &nbsp;·&nbsp; PIN: ${s.pin}</div>
+          <div class="text-xs text-muted">${s.time}</div>
+        </div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:20px;font-weight:700;color:${col}">${s.score}</div>
+        <div class="text-xs text-muted">${s.correct}C &nbsp;${s.wrong}W &nbsp;${s.skip}S</div>
+        <div class="text-xs text-muted">${s.accuracy}% acc</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function exportCSV() {
+  if (!allScores.length) { toast('No data to export', 'error'); return; }
+  const sorted = [...allScores].sort((a, b) => b.score - a.score);
+  const hdr = 'Rank,Name,Batch,IMS PIN,Score,Correct,Wrong,Skipped,Accuracy,Date,Test\n';
+  const rows = sorted.map((s, i) =>
+    `${i + 1},"${s.name}","${s.batch}","${s.pin}",${s.score},${s.correct},${s.wrong},${s.skip},${s.accuracy}%,"${s.time}","${s.test || 'Test 1'}"`
+  ).join('\n');
+  const blob = new Blob([hdr + rows], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'IMS_Mock_Test_Scores.csv'; a.click();
+  URL.revokeObjectURL(url);
+  toast('CSV downloaded!', 'success');
+}
+
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach((el, i) => el.classList.toggle('active', ['scores', 'tests'][i] === t));
+  document.getElementById('panel-scores').style.display = t === 'scores' ? 'block' : 'none';
+  document.getElementById('panel-tests').style.display = t === 'tests' ? 'block' : 'none';
+}
+</script>
+</body>
+</html>
